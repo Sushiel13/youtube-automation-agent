@@ -1,0 +1,176 @@
+name: YouTube Automation Pipeline
+
+# generate  -> AI writes, voices and renders a video; MP4 + thumbnail uploaded as a run artifact
+# approve   -> you review the MP4, then approve it by production id; it is scheduled/uploaded
+# publish   -> uploads any approved video whose publish time has passed
+# status    -> prints the recent productions table
+on:
+  schedule:
+    - cron: '31 0 * * *'     # generate: daily 00:31 UTC (06:01 IST)
+    - cron: '17 */6 * * *'   # publish: every 6 hours
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'What to run'
+        type: choice
+        options: [generate, approve, publish, status]
+        default: generate
+      topic:
+        description: 'generate: topic (blank = agent picks)'
+        required: false
+      style:
+        description: 'generate: style'
+        type: choice
+        options: ['', explainer, tutorial, list, review, story]
+        default: ''
+      length:
+        description: 'generate: length'
+        type: choice
+        options: [short, medium, long]
+        default: short
+      production_id:
+        description: 'approve: production id (from the generate run summary)'
+        required: false
+      privacy_status:
+        description: 'approve: YouTube privacy'
+        type: choice
+        options: [private, unlisted, public]
+        default: private
+      publish_time:
+        description: 'approve: ISO time, e.g. 2026-10-22T09:00:00Z (blank = upload now)'
+        required: false
+
+# One run at a time: they all share the same SQLite state.
+concurrency:
+  group: youtube-agent-state
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write   # needed to save/restore the state cache
+
+env:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  CHANNEL_NAME: ${{ vars.CHANNEL_NAME }}
+  DEFAULT_AUTHOR: ${{ vars.DEFAULT_AUTHOR }}
+  TARGET_AUDIENCE: ${{ vars.TARGET_AUDIENCE }}
+  YOUTUBE_REGION: ${{ vars.YOUTUBE_REGION || 'US' }}
+  DEFAULT_PRIVACY_STATUS: ${{ vars.DEFAULT_PRIVACY_STATUS || 'private' }}
+  VIDEO_PROVIDER: ${{ vars.VIDEO_PROVIDER || 'slideshow' }}
+  MAX_CONCURRENT_JOBS: '1'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Decide action
+        id: plan
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "action=${{ inputs.action }}" >> "$GITHUB_OUTPUT"
+            echo "source=manual" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "31 0 * * *" ]; then
+            echo "action=generate" >> "$GITHUB_OUTPUT"
+            echo "source=scheduler" >> "$GITHUB_OUTPUT"
+          else
+            echo "action=publish" >> "$GITHUB_OUTPUT"
+            echo "source=scheduler" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium (thumbnails / slideshow rendering)
+        if: steps.plan.outputs.action == 'generate'
+        run: npx playwright install --with-deps chromium
+
+      # SQLite DB, rendered videos and thumbnails survive between runs via the cache.
+      - name: Restore agent state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data
+            uploads
+          key: agent-state-${{ github.run_id }}
+          restore-keys: agent-state-
+
+      - name: Write credentials from secrets
+        env:
+          YT_CREDENTIALS_JSON: ${{ secrets.YT_CREDENTIALS_JSON }}
+          YT_TOKENS_JSON: ${{ secrets.YT_TOKENS_JSON }}
+        run: |
+          mkdir -p config
+          if [ -z "$YT_CREDENTIALS_JSON" ] || [ -z "$YT_TOKENS_JSON" ]; then
+            echo "::error::Add YT_CREDENTIALS_JSON and YT_TOKENS_JSON repository secrets (see docs/GITHUB_ACTIONS.md)"
+            exit 1
+          fi
+          printf '%s' "$YT_CREDENTIALS_JSON" > config/credentials.json
+          printf '%s' "$YT_TOKENS_JSON" > config/tokens.json
+          chmod 600 config/*.json
+          node -e "JSON.parse(require('fs').readFileSync('config/credentials.json'));JSON.parse(require('fs').readFileSync('config/tokens.json'))" \
+            || { echo "::error::A YouTube secret is not valid JSON"; exit 1; }
+
+      - name: Run agent (${{ steps.plan.outputs.action }})
+        id: agent
+        env:
+          # AI providers — set whichever you use; any one is enough
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+          NOTIFICATION_WEBHOOK_URL: ${{ secrets.NOTIFICATION_WEBHOOK_URL }}
+          # Action inputs
+          GENERATION_SOURCE: ${{ steps.plan.outputs.source }}
+          TOPIC: ${{ inputs.topic }}
+          STYLE: ${{ inputs.style }}
+          LENGTH: ${{ inputs.length || 'short' }}
+          PRODUCTION_ID: ${{ inputs.production_id }}
+          PRIVACY_STATUS: ${{ inputs.privacy_status }}
+          PUBLISH_TIME: ${{ inputs.publish_time }}
+        run: node scripts/ci/run-once.js "${{ steps.plan.outputs.action }}"
+
+      - name: Upload generated media for review
+        if: steps.plan.outputs.action == 'generate' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-media-${{ steps.agent.outputs.production_id || github.run_id }}
+          path: |
+            data/videos/${{ steps.agent.outputs.production_id }}*
+            uploads/thumbnails/*
+            data/captions/${{ steps.agent.outputs.production_id }}*
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ steps.plan.outputs.action }}-${{ github.run_id }}
+          path: logs/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Remove credentials
+        if: always()
+        run: rm -f config/credentials.json config/tokens.json
+
+      - name: Save agent state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data
+            uploads
+          key: agent-state-${{ github.run_id }}
