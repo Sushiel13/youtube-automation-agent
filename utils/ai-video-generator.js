@@ -814,19 +814,19 @@ class AIVideoGenerator {
         h1 {
             font-size: 72px;
             margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
         }
         
         h2 {
             font-size: 48px;
             margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
         }
         
         p {
             font-size: 36px;
             line-height: 1.4;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
         }
         
         .background-image {
@@ -846,7 +846,7 @@ class AIVideoGenerator {
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.6) 100%);
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.5) 70%, rgba(0,0,0,0.6) 100%);
             z-index: 1;
         }
 
