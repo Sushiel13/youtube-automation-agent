@@ -8,6 +8,7 @@ name: YouTube Automation Pipeline
 #                       upload the MP4 to YouTube yourself.
 #
 # generate -> writes, voices and renders a video; MP4 + thumbnail saved as a run artifact
+# export   -> re-saves the latest video to the 'videos' branch
 # status   -> prints the recent productions table
 on:
   schedule:
@@ -17,7 +18,7 @@ on:
       action:
         description: 'What to run'
         type: choice
-        options: [generate, status]
+        options: [generate, export, status]
         default: generate
       topic:
         description: 'generate: topic (blank = agent picks)'
@@ -39,7 +40,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write   # pushes finished videos to the 'videos' branch
   actions: write   # needed to save/restore the state cache
 
 env:
@@ -138,6 +139,7 @@ jobs:
           restore-keys: agent-state-
 
       - name: Run agent (${{ steps.plan.outputs.action }})
+        if: steps.plan.outputs.action != 'export'
         id: agent
         env:
           GENERATION_SOURCE: ${{ steps.plan.outputs.source }}
@@ -157,6 +159,40 @@ jobs:
             data/captions/${{ steps.agent.outputs.production_id }}*
           if-no-files-found: warn
           retention-days: 14
+
+      # Easy viewing: every finished video lands in the 'videos' branch, so you can
+      # play it straight from GitHub (videos/<date>_<id>/video.mp4).
+      - name: Save video to the 'videos' branch
+        if: steps.plan.outputs.action == 'generate' || steps.plan.outputs.action == 'export'
+        env:
+          PRODUCTION_ID: ${{ steps.agent.outputs.production_id }}
+        run: |
+          shopt -s nullglob
+          id="$PRODUCTION_ID"
+          if [ -z "$id" ]; then
+            latest=$(ls -t data/videos/*.mp4 2>/dev/null | head -1)
+            [ -n "$latest" ] || { echo "No video found"; exit 0; }
+            id=$(basename "$latest" | sed -E 's/(_[a-z]+)?\.mp4$//')
+          fi
+          videos=(data/videos/"$id"*.mp4)
+          [ ${#videos[@]} -gt 0 ] || { echo "No video for $id"; exit 0; }
+          dest="videos/$(date -u +%Y-%m-%d)_$id"
+          work=$(mktemp -d)
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code origin videos >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch videos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "$work"
+          else
+            git init --quiet -b videos "$work"
+            git -C "$work" remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          fi
+          mkdir -p "$work/$dest"
+          cp "${videos[0]}" "$work/$dest/video.mp4"
+          for f in uploads/thumbnails/*"$id"* data/captions/"$id"*; do cp "$f" "$work/$dest/"; done
+          git -C "$work" add -A
+          git -C "$work" commit --quiet -m "Video $id" || { echo "Nothing new"; exit 0; }
+          git -C "$work" push --quiet origin videos
+          echo "### ▶️ Watch: https://github.com/${{ github.repository }}/blob/videos/$dest/video.mp4" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload logs
         if: always()
