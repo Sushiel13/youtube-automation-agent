@@ -1,0 +1,4 @@
+Image credits:
+- "Kubernetes-Forum-Sydney-Mark-Bond-Photography-00192" by Cloud Native Computing Foundation, CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/), via Openverse: https://www.flickr.com/photos/143247548@N03/49210890676
+- "Time to hear from @mikkeloscar on how to Continuously Deliver your #Kubernetes Infrastructure #KubeCon" by PLeia2, CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/), via Openverse: https://www.flickr.com/photos/64684255@N00/26979418257
+- "Kubernetes.png" by Khtan66, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0), via Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Kubernetes.png

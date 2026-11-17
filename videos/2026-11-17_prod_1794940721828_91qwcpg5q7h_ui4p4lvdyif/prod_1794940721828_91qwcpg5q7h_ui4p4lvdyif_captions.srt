@@ -1,0 +1,92 @@
+1
+00:00:00,000 --> 00:00:02,500
+Say goodbye to complex cloud management with Kubernetes,
+
+2
+00:00:02,666 --> 00:00:05,166
+the simplest container orchestration tool out there.
+
+3
+00:00:05,000 --> 00:00:08,000
+Hey everyone, welcome back to the channel! Today,
+
+4
+00:00:08,428 --> 00:00:11,428
+we're diving deep into Kubernetes explained for beginners.
+
+5
+00:00:11,857 --> 00:00:14,857
+By the end of this video, you'll understand
+
+6
+00:00:15,285 --> 00:00:18,285
+exactly what Kubernetes explained for beginners is and
+
+7
+00:00:18,714 --> 00:00:21,714
+why it matters.
+
+8
+00:00:20,000 --> 00:00:26,000
+Kubernetes is a container orchestration tool that automates
+
+9
+00:00:26,857 --> 00:00:32,857
+the deployment, scaling, and management of containerized applications.
+
+10
+00:00:33,714 --> 00:00:39,714
+It makes it easier for developers to manage
+
+11
+00:00:40,571 --> 00:00:46,571
+their applications in the cloud without worrying about
+
+12
+00:00:47,428 --> 00:00:53,428
+the underlying infrastructure.
+
+13
+00:00:50,000 --> 00:00:57,500
+Kubernetes helps you manage your applications efficiently, reducing
+
+14
+00:00:58,000 --> 00:01:05,500
+the need for manual intervention. It simplifies the
+
+15
+00:01:06,000 --> 00:01:13,500
+process of scaling your applications to meet changing
+
+16
+00:01:14,000 --> 00:01:21,500
+demands, ensuring your services remain available.
+
+17
+00:01:20,000 --> 00:01:24,285
+So that's everything you need to know about
+
+18
+00:01:24,363 --> 00:01:28,649
+Kubernetes explained for beginners. We covered the key
+
+19
+00:01:28,727 --> 00:01:33,012
+points: - The fundamentals and why they matter
+
+20
+00:01:33,090 --> 00:01:37,376
+- Practical steps to get started - Real-world
+
+21
+00:01:37,454 --> 00:01:41,740
+applications and examples - Tips for long-term success
+
+22
+00:01:41,818 --> 00:01:46,103
+Remember, Kubernetes explained for beginners is a journey,
+
+23
+00:01:46,181 --> 00:01:50,467
+not a destination. Keep learning and improving!
+
