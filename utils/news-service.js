@@ -64,6 +64,23 @@ const CATEGORIES = {
   }
 };
 
+// Stories about crimes, allegations or sexual violence carry real defamation
+// risk when a small AI model summarises them, so they are skipped by default.
+// Override with NEWS_EXCLUDE (a regex) or NEWS_EXCLUDE=none.
+const DEFAULT_EXCLUDE = '\\b(rape|raped|sexual|sex abuse|abuse|assault|harass|paedophil|pedophil|grooming|molest|murder|stabb|shooting|shot dead|charged|accused|alleged|allegation|convicted|guilty|sentenced|jailed|prison|trial|court|lawsuit|sued|arrest|terror|suicide|self-harm)\\w*';
+// The article body only has to avoid the most sensitive subjects; words like
+// "police" or "children" appear in ordinary disaster reports.
+const BODY_EXCLUDE = /\b(rape|raped|sexual (?:assault|abuse|misconduct)|sex abuse|paedophil|pedophil|molest|grooming|suicide)\w*/i;
+// Theme images for news slides/thumbnails: objects and scenes, not people, so a
+// real person is never shown next to a story they have nothing to do with.
+const NEWS_IMAGE_THEMES = {
+  entertainment: ['cinema projector', 'stage lights', 'film reel', 'concert stage lights', 'theater curtain'],
+  world: ['globe', 'world map', 'newspaper', 'city skyline night', 'earth from space'],
+  ai: ['circuit board', 'computer chip', 'server room', 'data center', 'robot arm'],
+  gold: ['gold bars', 'gold coins', 'gold bullion', 'stock market chart', 'gold nugget'],
+  disasters: ['emergency lights', 'ambulance', 'storm clouds', 'rescue helicopter', 'warning sign']
+};
+
 const DEFAULT_ROTATION = ['entertainment', 'world', 'ai', 'gold', 'disasters'];
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#39': "'", rsquo: '’', lsquo: '‘', ldquo: '“', rdquo: '”', mdash: '—', ndash: '–', hellip: '…' };
@@ -156,6 +173,8 @@ class NewsService {
     this.rotation = String(process.env.NEWS_CATEGORIES || '')
       .split(',').map(s => s.trim().toLowerCase()).filter(c => CATEGORIES[c]);
     if (!this.rotation.length) this.rotation = DEFAULT_ROTATION;
+    const exclude = String(process.env.NEWS_EXCLUDE ?? '').trim();
+    this.exclude = /^none$/i.test(exclude) ? null : new RegExp(exclude || DEFAULT_EXCLUDE, 'i');
   }
 
   async loadHistory() {
@@ -205,6 +224,7 @@ class NewsService {
     return all
       .filter(i => !category.match || category.match.test(`${i.title} ${i.summary}`))
       .filter(i => !i.published || new Date(i.published).getTime() >= cutoff)
+      .filter(i => !this.exclude || !this.exclude.test(`${i.title} ${i.summary}`))
       // Skip live blogs, video-only pages, quizzes and opinion pieces: poor fact sources.
       .filter(i => !/\b(live|watch|quiz|video|podcast|opinion|letters?|crossword|in pictures|photos)\b/i.test(i.title) && !/\/(live|video|av|videos|podcasts?|commentisfree|crosswords)\//i.test(i.link))
       .filter(i => !this.isCovered(history, i))
@@ -262,6 +282,10 @@ class NewsService {
 
       for (const item of items.slice(0, 6)) {
         const text = await this.fetchArticle(item.link);
+        if (this.exclude && BODY_EXCLUDE.test(text)) {
+          this.logger.info(`News: skipping "${item.title}" (article covers crime/allegations)`);
+          continue;
+        }
         if (text.length >= 600 || (key === 'gold' && item.summary)) {
           story = { item, text };
           break;
@@ -324,4 +348,9 @@ function isNewsMode() {
   return /^(on|true|1|yes)$/i.test(String(process.env.NEWS_MODE || '').trim());
 }
 
-module.exports = { NewsService, isNewsMode, parseFeed, extractArticleText, CATEGORIES };
+function newsImageThemes(categoryLabelOrKey) {
+  const key = Object.keys(CATEGORIES).find(k => k === categoryLabelOrKey || CATEGORIES[k].label === categoryLabelOrKey);
+  return key ? NEWS_IMAGE_THEMES[key] : null;
+}
+
+module.exports = { NewsService, isNewsMode, parseFeed, extractArticleText, newsImageThemes, CATEGORIES };

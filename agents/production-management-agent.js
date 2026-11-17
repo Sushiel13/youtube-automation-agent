@@ -4,6 +4,7 @@ const { Logger } = require('../utils/logger');
 const { AIVideoGenerator } = require('../utils/ai-video-generator');
 const { SceneRepairService } = require('../utils/scene-repair-service');
 const { readCredits } = require('../utils/stock-images');
+const { newsImageThemes } = require('../utils/news-service');
 
 class ProductionManagementAgent {
   constructor(db, credentials) {
@@ -314,11 +315,18 @@ class ProductionManagementAgent {
       const { script } = productionData;
       
       // Generate visual assets using DALL-E
-      const visualPrompts = this.createVisualPromptsFromScript(script);
+      let visualPrompts = this.createVisualPromptsFromScript(script);
+      // News: generic theme images (no people) instead of keyword matches.
+      const newsThemes = script.metadata?.strategy?.sourceFacts
+        ? newsImageThemes(script.metadata.strategy.contentPillar)
+        : null;
+      if (newsThemes) {
+        visualPrompts = visualPrompts.map((_, index) => newsThemes[index % newsThemes.length]);
+      }
       const visualAssets = [];
       const profile = await this.db.getChannelProfile?.() || {};
       const visualStyle = profile.visual_style || 'ethereal';
-      this.aiVideoGenerator.stockImages?.setContext?.(script.title);
+      this.aiVideoGenerator.stockImages?.setContext?.(newsThemes ? newsThemes[0] : script.title);
       
       for (const prompt of visualPrompts) {
         const assets = await this.aiVideoGenerator.generateVisualAssets(prompt, visualStyle, 1);

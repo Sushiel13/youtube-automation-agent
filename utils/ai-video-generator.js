@@ -8,6 +8,7 @@ const { Logger } = require('./logger');
 const { runFFmpeg, getMediaDuration, checkFFmpeg, ffmpegInstallHint } = require('./ffmpeg');
 const { MediaGenerationService } = require('./media-generation-service');
 const { StockImageService, isStockEnabled } = require('./stock-images');
+const { newsImageThemes } = require('./news-service');
 
 const OPENAI_IMAGE_MODEL = 'gpt-image-2';
 
@@ -326,7 +327,10 @@ class AIVideoGenerator {
   async generateStockThumbnail(script) {
     const title = String(script.title || 'Untitled').trim();
     const base = path.join(__dirname, '..', 'data', 'assets', `thumb_bg_${Date.now()}.jpg`);
-    const bg = await this.stockImages.fetchImage(title, base);
+    const strategy = script.metadata?.strategy;
+    const themes = strategy?.sourceFacts ? newsImageThemes(strategy.contentPillar) : null;
+    if (themes) this.stockImages.setContext(themes[0]);
+    const bg = await this.stockImages.fetchImage(themes ? themes[Math.floor(Math.random() * themes.length)] : title, base);
     if (!bg) return null;
 
     const thumbnailPath = path.join(__dirname, '..', 'uploads', 'thumbnails', `thumbnail_${Date.now()}.jpg`);
