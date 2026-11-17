@@ -1,0 +1,92 @@
+1
+00:00:00,000 --> 00:00:01,666
+Discover why the US National Security Agency's internal
+
+2
+00:00:02,222 --> 00:00:03,888
+communications network is down and what it means
+
+3
+00:00:04,444 --> 00:00:06,111
+for cybersecurity.
+
+4
+00:00:05,000 --> 00:00:12,500
+Welcome to today's news update. In world news
+
+5
+00:00:17,000 --> 00:00:24,500
+today: 
+
+6
+00:00:20,000 --> 00:00:30,000
+According to a report by CNN, the internal
+
+7
+00:00:31,162 --> 00:00:41,162
+communications network of the United States National Security
+
+8
+00:00:42,325 --> 00:00:52,325
+Agency (NSA), known as NSA Net, is currently
+
+9
+00:00:53,488 --> 00:01:03,488
+down. The report, citing six unnamed sources, stated
+
+10
+00:01:04,651 --> 00:01:14,651
+that there is no evidence of a cyberattack
+
+11
+00:01:15,813 --> 00:01:25,813
+causing the outage.
+
+12
+00:01:20,000 --> 00:01:26,666
+The reported network disruption at the NSA comes
+
+13
+00:01:27,058 --> 00:01:33,725
+in a series of other major outages affecting
+
+14
+00:01:34,117 --> 00:01:40,784
+various sectors in the US. On Friday, the
+
+15
+00:01:41,176 --> 00:01:47,843
+Federal Aviation Administration (FAA) temporarily halted all takeoffs
+
+16
+00:01:48,235 --> 00:01:54,901
+due to a system upgrade causing a flight
+
+17
+00:01:55,294 --> 00:02:01,960
+communication overload. Last week, Microsoft also experienced outages
+
+18
+00:02:02,352 --> 00:02:09,019
+in services like Outlook and Teams. More recently,
+
+19
+00:02:09,411 --> 00:02:16,078
+outages hit major banks and United Airlines briefly
+
+20
+00:02:16,470 --> 00:02:23,137
+suffered a system disruption.
+
+21
+00:02:20,000 --> 00:02:30,000
+This is a developing story, and details may
+
+22
+00:02:32,000 --> 00:02:42,000
+change as more information comes in. Sources are
+
+23
+00:02:44,000 --> 00:02:54,000
+linked in the description.
+
