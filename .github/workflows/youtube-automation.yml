@@ -57,12 +57,14 @@ env:
   TARGET_AUDIENCE: ${{ vars.TARGET_AUDIENCE }}
   YOUTUBE_REGION: ${{ vars.YOUTUBE_REGION || 'US' }}
   DEFAULT_PRIVACY_STATUS: ${{ vars.DEFAULT_PRIVACY_STATUS || 'private' }}
-  VIDEO_PROVIDER: ${{ vars.VIDEO_PROVIDER || 'slideshow' }}
+  # Free-only mode: local slideshow rendering, no paid AI video providers
+  VIDEO_PROVIDER: slideshow
   MAX_CONCURRENT_JOBS: '1'
 
 jobs:
   run:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright 1.54 can't install Chromium on
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - name: Decide action
@@ -119,17 +121,22 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('config/credentials.json'));JSON.parse(require('fs').readFileSync('config/tokens.json'))" \
             || { echo "::error::A YouTube secret is not valid JSON"; exit 1; }
 
+      - name: Check free-tier key
+        if: steps.plan.outputs.action == 'generate'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::Add a GEMINI_API_KEY repository secret (free at https://aistudio.google.com/apikey)"
+            exit 1
+          fi
+
       - name: Run agent (${{ steps.plan.outputs.action }})
         id: agent
         env:
-          # AI providers — set whichever you use; any one is enough
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # Free-only mode: Gemini free tier handles script + narration.
+          # Paid providers (OpenAI, OpenRouter, DeepSeek, ElevenLabs, Replicate) are deliberately not passed in.
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
-          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           NOTIFICATION_WEBHOOK_URL: ${{ secrets.NOTIFICATION_WEBHOOK_URL }}
           # Action inputs
           GENERATION_SOURCE: ${{ steps.plan.outputs.source }}
