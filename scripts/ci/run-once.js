@@ -16,7 +16,9 @@
  *   PUBLISH_TIME                  approve:  ISO time; empty = publish on this run
  */
 const fs = require('fs');
+const path = require('path');
 const { YouTubeAutomationAgent } = require('../../index');
+const { NewsService, isNewsMode } = require('../../utils/news-service');
 
 const action = String(process.argv[2] || process.env.AGENT_ACTION || 'status').toLowerCase();
 const env = name => (process.env[name] || '').trim() || null;
@@ -57,6 +59,28 @@ async function generate(agent) {
     length: env('LENGTH') || 'medium',
     source
   };
+  // News mode: with no manual topic, pick today's story from live news feeds.
+  let story = null;
+  if (isNewsMode() && !input.topic) {
+    story = await new NewsService().pickStory();
+    if (!story) {
+      summary('❌ News mode: no fresh, readable story found in any category. Try again later.');
+      process.exitCode = 1;
+      return;
+    }
+    input.topic = story.topic;
+    input.style = input.style || 'explainer';
+    input.length = env('LENGTH') || 'short';
+    input.strategyContext = {
+      pillar: story.label,
+      audience: 'General audience who wants a quick, accurate news update',
+      constraints: 'News update: report only the supplied facts, neutrally, with attribution.',
+      sourceFacts: story.facts,
+      researchSources: story.sources
+    };
+    summary(`## 📰 News pick — ${story.label}\n**${story.topic}**\n\nSources:\n${story.sources.map(s => `- [${s.title}](${s.url})`).join('\n')}`);
+  }
+
   summary(`## 🎬 Generate\nTopic: \`${input.topic || 'auto'}\` · Style: \`${input.style || 'auto'}\` · Length: \`${input.length}\` · Source: \`${source}\``);
 
   const job = await agent.startGenerationJob(input);
@@ -69,6 +93,19 @@ async function generate(agent) {
     return;
   }
   const productionId = finished.production_id || finished.productionId;
+  if (story && productionId) {
+    // Paste-ready text for the YouTube description: sources + image note.
+    const lines = [
+      'Sources:',
+      ...story.sources.map(s => `- ${s.title}${s.publisher ? ` (${s.publisher})` : ''}: ${s.url}`),
+      '',
+      'Images are illustrative and may not show the actual event.',
+      'This video was produced with AI assistance from the reports above.'
+    ];
+    const file = path.join(__dirname, '..', '..', 'data', 'videos', `${productionId}_sources.txt`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, `${lines.join('\n')}\n`);
+  }
   summary(
     `✅ **${finished.title || 'Untitled'}** — production \`${productionId}\`, stage \`${finished.stage}\`.\n\n` +
     (/^(off|false|0|no|disabled)$/i.test(process.env.YOUTUBE_UPLOAD || '')

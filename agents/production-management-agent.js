@@ -165,16 +165,17 @@ class ProductionManagementAgent {
     
     // Add introduction
     if (script.introduction) {
-      ttsText += `${script.introduction.greeting}\n`;
-      ttsText += `${script.introduction.topicIntro}\n`;
-      ttsText += `${script.introduction.valueProposition}\n`;
-      ttsText += `${script.introduction.credibility}\n\n`;
+      for (const part of ['greeting', 'topicIntro', 'valueProposition', 'credibility']) {
+        if (script.introduction[part]) ttsText += `${script.introduction[part]}\n`;
+      }
+      ttsText += '\n';
     }
+    const isNews = Boolean(script.metadata?.strategy?.sourceFacts);
     
     // Add main content
     if (script.mainContent && script.mainContent.sections) {
       script.mainContent.sections.forEach((section, index) => {
-        ttsText += `Section ${index + 1}: ${section.title}\n`;
+        ttsText += isNews ? '' : `Section ${index + 1}: ${section.title}\n`;
         
         if (Array.isArray(section.content)) {
           section.content.forEach(line => {
@@ -211,9 +212,9 @@ class ProductionManagementAgent {
     
     // Add CTA
     if (script.callToAction) {
-      ttsText += `${script.callToAction.subscribe}\n`;
-      ttsText += `${script.callToAction.like}\n`;
-      ttsText += `${script.callToAction.comment}\n`;
+      for (const part of ['subscribe', 'like', 'comment']) {
+        if (script.callToAction[part]) ttsText += `${script.callToAction[part]}\n`;
+      }
     }
     
     return ttsText;

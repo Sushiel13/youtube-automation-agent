@@ -134,8 +134,17 @@ Editorial rationale: ${strategy.planRationale || 'fit the selected topic and aud
 Channel constraints: ${strategy.channelConstraints || 'none beyond the factual-safety rules below'}
 Preferred call to action: ${strategy.callToAction || 'invite the viewer to subscribe'}
 Keywords: ${(strategy.keywords || []).join(', ')}
-Research sources: ${JSON.stringify(strategy.researchSources || [])}
-Avoid fabricated statistics, unsupported claims, and fake urgency. List every externally verifiable factual claim in claims. Use only exact URLs from Research sources; use an empty sourceUrls array when the supplied sources do not support a claim.`;
+Research sources: ${JSON.stringify((strategy.researchSources || []).map(source => source.url || source))}
+Avoid fabricated statistics, unsupported claims, and fake urgency. List every externally verifiable factual claim in claims. Use only exact URLs from Research sources; use an empty sourceUrls array when the supplied sources do not support a claim.${strategy.sourceFacts ? `
+
+THIS IS A NEWS VIDEO. Write it ONLY from the reported facts below.
+- Every name, number, date, place and quote must appear in the facts. Do not add background, guesses, predictions or numbers from memory.
+- If a detail is not in the facts, leave it out. Say "according to <publisher>" for key claims.
+- Neutral, respectful news tone. For accidents and disasters: no graphic detail, no speculation about blame, and mention that details may change as the story develops.
+- Explain why the story matters in plain language, using only what the facts support.
+
+REPORTED FACTS:
+${strategy.sourceFacts}` : ''}`;
 
     try {
       const response = await this.aiTextService.generateText(prompt, {
@@ -150,16 +159,17 @@ Avoid fabricated statistics, unsupported claims, and fake urgency. List every ex
       }
 
       this.logger.info(`Using AI script generation via ${this.aiTextService.providerName}`);
+      const isNews = Boolean(strategy.sourceFacts);
       return {
         title: String(parsed.title).slice(0, 100),
         hook: this.normalizeAIHook(parsed.hook),
-        introduction: await this.generateIntroduction(strategy),
+        introduction: isNews ? this.generateNewsIntroduction(strategy) : await this.generateIntroduction(strategy),
         mainContent: {
           sections,
           totalDuration: this.calculateSectionsDuration(sections)
         },
-        conclusion: await this.generateConclusion(strategy),
-        callToAction: this.normalizeAICTA(parsed.cta, strategy),
+        conclusion: isNews ? this.generateNewsConclusion(strategy) : await this.generateConclusion(strategy),
+        callToAction: isNews ? this.generateNewsCTA() : this.normalizeAICTA(parsed.cta, strategy),
         duration: this.estimateDuration({ sections }),
         tone: template.tone,
         pacing: template.pacing,
@@ -351,6 +361,40 @@ Avoid fabricated statistics, unsupported claims, and fake urgency. List every ex
       valueProposition: `By the end of this video, you'll understand exactly ${this.getValueProposition(strategy)}.`,
       credibility: this.getCredibilityStatement(strategy),
       duration: '0:05-0:20'
+    };
+  }
+
+  // News videos: no invented credibility claims, no "journey" pep talk.
+  generateNewsIntroduction(strategy) {
+    const publishers = [...new Set((strategy.researchSources || []).map(s => s.publisher).filter(Boolean))];
+    return {
+      greeting: 'Welcome to today\'s news update.',
+      topicIntro: strategy.contentPillar ? `In ${strategy.contentPillar.toLowerCase()} today:` : 'Here is what happened.',
+      valueProposition: '',
+      credibility: publishers.length ? `This report is based on reporting from ${publishers.join(' and ')}.` : '',
+      duration: '0:05-0:15'
+    };
+  }
+
+  generateNewsConclusion(strategy) {
+    const developing = /disaster|accident|world/i.test(strategy.contentPillar || '');
+    return {
+      type: 'conclusion',
+      title: 'Wrapping Up',
+      recap: [developing ? 'This is a developing story, and details may change as more information comes in.' : 'Those are the key facts as reported so far.'],
+      finalThought: 'Sources are linked in the description.',
+      duration: '15 seconds'
+    };
+  }
+
+  generateNewsCTA() {
+    return {
+      type: 'call_to_action',
+      subscribe: 'Subscribe for a short daily news update.',
+      like: '',
+      comment: '',
+      nextVideo: '',
+      duration: '5 seconds'
     };
   }
 

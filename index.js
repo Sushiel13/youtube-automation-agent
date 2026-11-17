@@ -301,6 +301,21 @@ class YouTubeAutomationAgent {
         }
         value.strategyContext[key] = body.strategyContext[key].trim();
       }
+      // News mode: reported facts the script must stay within, plus their source links.
+      if (typeof body.strategyContext.sourceFacts === 'string') {
+        value.strategyContext.sourceFacts = body.strategyContext.sourceFacts.trim().slice(0, 8000);
+      }
+      if (Array.isArray(body.strategyContext.researchSources)) {
+        value.strategyContext.researchSources = body.strategyContext.researchSources
+          .filter(source => source && typeof source.url === 'string' && /^https?:\/\//.test(source.url))
+          .slice(0, 10)
+          .map(source => ({
+            url: source.url.slice(0, 2000),
+            title: String(source.title || '').slice(0, 300),
+            publisher: String(source.publisher || '').slice(0, 200),
+            published: source.published ? String(source.published).slice(0, 40) : null
+          }));
+      }
     }
 
     return { valid: true, value };
@@ -1486,6 +1501,7 @@ class YouTubeAutomationAgent {
       generated.researchSources = Array.isArray(strategyContext.researchSources)
         ? strategyContext.researchSources
         : [];
+      generated.sourceFacts = strategyContext.sourceFacts || null;
       return generated;
     });
     this.logger.info(`Strategy generated: ${strategy.topic}`);

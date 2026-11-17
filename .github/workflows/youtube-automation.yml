@@ -1,6 +1,8 @@
 name: YouTube Automation Pipeline
 
 # Keyless, free mode — no API keys, no Google login, no repository secrets.
+#   Topic             : today's news story from public RSS feeds (BBC, Guardian, Al Jazeera,
+#                       TechCrunch, The Verge) + live gold price; script uses only reported facts
 #   Script + metadata : Ollama running a small open model on the runner
 #   Narration         : Piper (offline text-to-speech)
 #   Images            : free Creative Commons photos (Openverse / Wikimedia Commons),
@@ -23,7 +25,7 @@ on:
         options: [generate, export, status]
         default: generate
       topic:
-        description: 'generate: topic (blank = agent picks)'
+        description: "generate: topic (blank = today's news story)"
         required: false
       style:
         description: 'generate: style'
@@ -57,8 +59,12 @@ env:
   YOUTUBE_UPLOAD: 'off'
   VIDEO_PROVIDER: slideshow
   OLLAMA_BASE_URL: http://127.0.0.1:11434/v1
-  OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen2.5:3b' }}
+  OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen2.5:7b' }}
   PIPER_VOICE_NAME: ${{ vars.PIPER_VOICE || 'en_US-lessac-medium' }}
+  # Daily news video: rotates entertainment, world news, AI, gold price, accidents/disasters.
+  # A manual run with a topic overrides it. Set repo variable NEWS_MODE=off for evergreen topics.
+  NEWS_MODE: ${{ vars.NEWS_MODE || 'on' }}
+  NEWS_CATEGORIES: ${{ vars.NEWS_CATEGORIES || 'entertainment,world,ai,gold,disasters' }}
   # Free Creative Commons photos (Openverse, fallback Wikimedia Commons) for slides + thumbnail
   STOCK_IMAGES: ${{ vars.STOCK_IMAGES || 'openverse' }}
 
