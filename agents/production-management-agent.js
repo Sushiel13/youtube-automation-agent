@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const { Logger } = require('../utils/logger');
 const { AIVideoGenerator } = require('../utils/ai-video-generator');
 const { SceneRepairService } = require('../utils/scene-repair-service');
+const { readCredits } = require('../utils/stock-images');
 
 class ProductionManagementAgent {
   constructor(db, credentials) {
@@ -316,10 +317,20 @@ class ProductionManagementAgent {
       const visualAssets = [];
       const profile = await this.db.getChannelProfile?.() || {};
       const visualStyle = profile.visual_style || 'ethereal';
+      this.aiVideoGenerator.stockImages?.setContext?.(script.title);
       
       for (const prompt of visualPrompts) {
         const assets = await this.aiVideoGenerator.generateVisualAssets(prompt, visualStyle, 1);
         visualAssets.push(...assets);
+      }
+
+      // Stock photos need credit: write data/videos/<id>_credits.txt for the description.
+      const credits = await readCredits(visualAssets);
+      if (credits.length) {
+        const creditsPath = path.join(__dirname, '..', 'data', 'videos', `${productionData.id}_credits.txt`);
+        await fs.mkdir(path.dirname(creditsPath), { recursive: true });
+        await fs.writeFile(creditsPath, `Image credits:\n${credits.map(c => `- ${c}`).join('\n')}\n`);
+        this.logger.info(`Wrote ${credits.length} image credit(s) to ${creditsPath}`);
       }
       
       productionData.assets.video = {

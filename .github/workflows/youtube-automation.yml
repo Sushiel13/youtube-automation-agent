@@ -3,6 +3,8 @@ name: YouTube Automation Pipeline
 # Keyless, free mode — no API keys, no Google login, no repository secrets.
 #   Script + metadata : Ollama running a small open model on the runner
 #   Narration         : Piper (offline text-to-speech)
+#   Images            : free Creative Commons photos (Openverse / Wikimedia Commons),
+#                       credited in <id>_credits.txt - paste it into the video description
 #   Video + thumbnail : local slideshow renderer (Playwright + FFmpeg)
 #   Upload            : manual — download the "generated-media" artifact and
 #                       upload the MP4 to YouTube yourself.
@@ -57,6 +59,8 @@ env:
   OLLAMA_BASE_URL: http://127.0.0.1:11434/v1
   OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'qwen2.5:3b' }}
   PIPER_VOICE_NAME: ${{ vars.PIPER_VOICE || 'en_US-lessac-medium' }}
+  # Free Creative Commons photos (Openverse, fallback Wikimedia Commons) for slides + thumbnail
+  STOCK_IMAGES: ${{ vars.STOCK_IMAGES || 'openverse' }}
 
 jobs:
   run:
@@ -188,7 +192,9 @@ jobs:
           fi
           mkdir -p "$work/$dest"
           cp "${videos[0]}" "$work/$dest/video.mp4"
-          for f in uploads/thumbnails/*"$id"* data/captions/"$id"*; do cp "$f" "$work/$dest/"; done
+          for f in uploads/thumbnails/*"$id"* data/captions/"$id"* data/videos/"$id"*.txt; do cp "$f" "$work/$dest/"; done
+          thumb=$(ls -t uploads/thumbnails/*.jpg uploads/thumbnails/*.png 2>/dev/null | head -1)
+          if [ -n "$thumb" ]; then cp "$thumb" "$work/$dest/thumbnail.${thumb##*.}"; fi
           git -C "$work" add -A
           git -C "$work" commit --quiet -m "Video $id" || { echo "Nothing new"; exit 0; }
           git -C "$work" push --quiet origin videos

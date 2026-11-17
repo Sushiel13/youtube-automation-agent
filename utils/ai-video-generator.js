@@ -7,6 +7,7 @@ const sharp = require('sharp');
 const { Logger } = require('./logger');
 const { runFFmpeg, getMediaDuration, checkFFmpeg, ffmpegInstallHint } = require('./ffmpeg');
 const { MediaGenerationService } = require('./media-generation-service');
+const { StockImageService, isStockEnabled } = require('./stock-images');
 
 const OPENAI_IMAGE_MODEL = 'gpt-image-2';
 
@@ -281,6 +282,10 @@ class AIVideoGenerator {
 
     try {
       if (!this.openai && !this.gemini) {
+        if (isStockEnabled()) {
+          const stock = await this.fetchStockVisuals(prompt, count);
+          if (stock.length) return stock;
+        }
         return await this.simulateVisualAssets(prompt, style, count);
       }
 
@@ -299,6 +304,59 @@ class AIVideoGenerator {
       this.logger.error('Visual asset generation failed:', error);
       return await this.simulateVisualAssets(prompt, style, count);
     }
+  }
+
+  // Free, keyless stock photos (Openverse / Wikimedia Commons) used when no
+  // image-generation provider is configured and STOCK_IMAGES is on.
+  get stockImages() {
+    if (!this._stockImages) this._stockImages = new StockImageService({ logger: this.logger });
+    return this._stockImages;
+  }
+
+  async fetchStockVisuals(prompt, count = 1) {
+    const paths = [];
+    for (let i = 0; i < count; i++) {
+      const imagePath = path.join(__dirname, '..', 'data', 'assets', `stock_${Date.now()}_${i}.jpg`);
+      const saved = await this.stockImages.fetchImage(prompt, imagePath);
+      if (saved) paths.push(saved);
+    }
+    return paths;
+  }
+
+  async generateStockThumbnail(script) {
+    const title = String(script.title || 'Untitled').trim();
+    const base = path.join(__dirname, '..', 'data', 'assets', `thumb_bg_${Date.now()}.jpg`);
+    const bg = await this.stockImages.fetchImage(title, base);
+    if (!bg) return null;
+
+    const thumbnailPath = path.join(__dirname, '..', 'uploads', 'thumbnails', `thumbnail_${Date.now()}.jpg`);
+    await fs.mkdir(path.dirname(thumbnailPath), { recursive: true });
+
+    // Wrap the title into at most 3 lines and draw it over a dark gradient.
+    const escape = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const words = title.split(/\s+/);
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      if ((line + ' ' + word).trim().length > 22 && line) { lines.push(line); line = word; } else { line = (line + ' ' + word).trim(); }
+    }
+    if (line) lines.push(line);
+    const shown = lines.slice(0, 3);
+    if (lines.length > 3) shown[2] = shown[2].replace(/\s*\S*$/, '') + '…';
+    const fontSize = 84;
+    const startY = 720 - 70 - (shown.length - 1) * (fontSize + 12);
+    const text = shown.map((l, i) => `<text x="60" y="${startY + i * (fontSize + 12)}" font-family="DejaVu Sans, Arial, sans-serif" font-weight="bold" font-size="${fontSize}" fill="#fff" stroke="#000" stroke-width="3" paint-order="stroke">${escape(l)}</text>`).join('');
+    const overlay = Buffer.from(`<svg width="1280" height="720" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0.35" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.85"/></linearGradient></defs>
+      <rect width="1280" height="720" fill="url(#g)"/>${text}</svg>`);
+
+    await sharp(bg).resize(1280, 720, { fit: 'cover' }).composite([{ input: overlay }]).jpeg({ quality: 88 }).toFile(thumbnailPath);
+    await fs.copyFile(`${bg}.credit.json`, `${thumbnailPath}.credit.json`).catch(() => {});
+    return {
+      path: thumbnailPath,
+      dimensions: { width: 1280, height: 720 },
+      fileSize: await this.getFileSize(thumbnailPath)
+    };
   }
 
   async generateImage(prompt, imagePath) {
@@ -1030,6 +1088,10 @@ class AIVideoGenerator {
 
     try {
       if (!this.openai && !this.gemini) {
+        if (isStockEnabled()) {
+          const stock = await this.generateStockThumbnail(script);
+          if (stock) return stock;
+        }
         return await this.simulateThumbnailGeneration(script, style);
       }
 
