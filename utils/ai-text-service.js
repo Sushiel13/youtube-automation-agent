@@ -62,6 +62,16 @@ const PROVIDERS = {
     // silently switch Gemini users with a video key over to MiniMax text.
     envKey: 'MINIMAX_TEXT_API_KEY',
   },
+  // Local, keyless: an Ollama server (e.g. on the CI runner). OLLAMA_BASE_URL
+  // holds the server URL, not a secret; Ollama ignores the API key.
+  ollama: {
+    name: 'Ollama (local)',
+    baseURL: 'http://127.0.0.1:11434/v1',
+    defaultModel: process.env.OLLAMA_MODEL || 'qwen2.5:3b',
+    models: ['qwen2.5:3b', 'llama3.2:3b', 'qwen2.5:7b'],
+    envKey: 'OLLAMA_BASE_URL',
+    keyless: true,
+  },
 };
 
 class AITextService {
@@ -100,6 +110,15 @@ class AITextService {
   }
 
   _initOpenAICompatible(preset, apiKey, model) {
+    if (preset.keyless) {
+      // The env value is the server URL; any non-empty key satisfies the SDK.
+      const baseURL = /^https?:\/\//.test(apiKey) ? apiKey.replace(/\/$/, '') : preset.baseURL;
+      this.client = new OpenAI({ apiKey: 'ollama', baseURL, timeout: 15 * 60 * 1000 });
+      this.model = model || process.env.OLLAMA_MODEL || preset.defaultModel;
+      this.providerName = preset.name;
+      this.logger.info(`${preset.name} initialized at ${baseURL} (model: ${this.model})`);
+      return;
+    }
     this.client = new OpenAI({ apiKey, baseURL: preset.baseURL });
     this.model = model || preset.defaultModel;
     this.providerName = preset.name;

@@ -187,6 +187,7 @@ class YouTubeAutomationAgent {
       creds.openai?.apiKey || process.env.OPENAI_API_KEY ||
       creds.elevenLabs?.apiKey || process.env.ELEVENLABS_API_KEY ||
       creds.azureSpeech?.subscriptionKey || process.env.AZURE_SPEECH_KEY ||
+      process.env.PIPER_VOICE ||
       hasGemini
     );
     const hasFFmpeg = await checkFFmpeg();

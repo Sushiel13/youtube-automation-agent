@@ -42,6 +42,10 @@ class AnalyticsOptimizationAgent {
   }
 
   async setupAnalyticsAPI() {
+    if (this.credentials.isUploadDisabled?.() && !this.credentials.credentials?.youtube) {
+      this.logger.warn('YOUTUBE_UPLOAD=off — YouTube API not configured (generate-only mode)');
+      return;
+    }
     try {
       const auth = this.credentials.getYouTubeAuth();
       this.youtubeAnalytics = google.youtubeAnalytics({ version: 'v2', auth });

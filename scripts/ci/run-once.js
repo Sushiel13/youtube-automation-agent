@@ -71,8 +71,10 @@ async function generate(agent) {
   const productionId = finished.production_id || finished.productionId;
   summary(
     `✅ **${finished.title || 'Untitled'}** — production \`${productionId}\`, stage \`${finished.stage}\`.\n\n` +
-    'Download the **generated-media** artifact from this run, watch the MP4, then run this workflow ' +
-    `with action **approve** and production id \`${productionId}\` to schedule it for upload.`
+    (/^(off|false|0|no|disabled)$/i.test(process.env.YOUTUBE_UPLOAD || '')
+      ? 'Download the **generated-media** artifact from this run, watch the MP4, then upload it to YouTube yourself.'
+      : 'Download the **generated-media** artifact from this run, watch the MP4, then run this workflow ' +
+        `with action **approve** and production id \`${productionId}\` to schedule it for upload.`)
   );
 }
 

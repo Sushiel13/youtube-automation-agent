@@ -129,6 +129,10 @@ class AIVideoGenerator {
         provider = 'openai';
         model = 'gpt-4o-mini-tts';
         generatedPath = await this.generateOpenAITTS(text, outputPath);
+      } else if (process.env.PIPER_VOICE) {
+        provider = 'piper';
+        model = path.basename(process.env.PIPER_VOICE, '.onnx');
+        generatedPath = await this.generatePiperTTS(text, outputPath);
       } else if (this.gemini) {
         provider = 'gemini';
         model = process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts';
@@ -210,6 +214,33 @@ class AIVideoGenerator {
     await fs.writeFile(outputPath, buffer);
 
     this.logger.info('OpenAI TTS generation complete');
+    return outputPath;
+  }
+
+  // Piper: free, offline neural TTS. PIPER_VOICE is the path to a downloaded
+  // .onnx voice; PIPER_BIN overrides the executable (default: "piper" on PATH).
+  async generatePiperTTS(text, outputPath) {
+    const { spawn } = require('child_process');
+    const voice = process.env.PIPER_VOICE;
+    const bin = process.env.PIPER_BIN || 'piper';
+    const wavPath = `${outputPath}.piper.wav`;
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+
+    await new Promise((resolve, reject) => {
+      const child = spawn(bin, ['--model', voice, '--output_file', wavPath], { stdio: ['pipe', 'ignore', 'pipe'] });
+      let stderr = '';
+      child.stderr.on('data', chunk => { stderr += chunk; });
+      child.on('error', reject);
+      child.on('close', code => (code === 0
+        ? resolve()
+        : reject(new Error(`Piper exited with code ${code}: ${stderr.slice(-500)}`))));
+      // Piper reads one utterance per line; keep sentences, drop hard line breaks.
+      child.stdin.end(String(text).replace(/\s*\n+\s*/g, ' ').trim() + '\n');
+    });
+
+    await runFFmpeg(['-y', '-i', wavPath, outputPath]);
+    await fs.unlink(wavPath).catch(() => {});
+    this.logger.info('Piper TTS generation complete');
     return outputPath;
   }
 

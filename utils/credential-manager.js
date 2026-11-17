@@ -6,6 +6,8 @@ const chalk = require('chalk');
 const { Logger } = require('./logger');
 const { PROVIDERS, GEMINI_MODELS, GEMINI_DEFAULT_MODEL } = require('./ai-text-service');
 
+const isUploadDisabled = () => /^(off|false|0|no|disabled)$/i.test(String(process.env.YOUTUBE_UPLOAD || '').trim());
+
 // API keys and OAuth tokens are owner-only (0600). writeFile's mode applies only
 // when the file is created, so files written by older versions are tightened too.
 async function writePrivateFile(filePath, contents) {
@@ -580,6 +582,11 @@ class CredentialManager {
 
     process.env[key] = String(value);
   }
+  // YOUTUBE_UPLOAD=off: generate-only mode without a Google account
+  isUploadDisabled() {
+    return isUploadDisabled();
+  }
+
   // Validation methods
   hasAITextProvider() {
     if (this.credentials.openai?.apiKey || this.credentials.gemini?.apiKey || this.credentials.aiProvider?.apiKey) {
@@ -594,7 +601,9 @@ class CredentialManager {
   getMissingCredentials() {
     const missing = [];
 
-    if (!this.credentials.youtube) {
+    // YOUTUBE_UPLOAD=off: generate-only mode with no Google account. Videos are
+    // produced for manual upload and nothing is published.
+    if (!this.credentials.youtube && !isUploadDisabled()) {
       missing.push('youtube');
     }
 
@@ -622,7 +631,7 @@ class CredentialManager {
     }
 
     // Validate YouTube tokens
-    if (!this.tokens.youtube) {
+    if (!this.tokens.youtube && !isUploadDisabled()) {
       console.log(chalk.yellow('\n⚠️  YouTube authentication required'));
       return false;
     }

@@ -22,6 +22,10 @@ class PublishingSchedulingAgent {
   }
 
   async setupYouTubeAPI() {
+    if (this.credentials.isUploadDisabled?.() && !this.credentials.credentials?.youtube) {
+      this.logger.warn('YOUTUBE_UPLOAD=off — YouTube API not configured (generate-only mode)');
+      return;
+    }
     try {
       const auth = this.credentials.getYouTubeAuth();
       this.youtube = google.youtube({ version: 'v3', auth });
