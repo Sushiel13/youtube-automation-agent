@@ -1,0 +1,84 @@
+1
+00:00:00,000 --> 00:00:02,500
+Discover how Nvidia and its CEO, Jensen Huang,
+
+2
+00:00:02,500 --> 00:00:05,000
+have shaped the US economy through tech innovation.
+
+3
+00:00:05,000 --> 00:00:12,500
+Welcome to today's news update. In ai news
+
+4
+00:00:17,000 --> 00:00:24,500
+today: 
+
+5
+00:00:20,000 --> 00:00:32,000
+Nvidia, originally focused on graphics processing, has pivoted
+
+6
+00:00:32,307 --> 00:00:44,307
+to dominate the AI chip market. Today, it
+
+7
+00:00:44,615 --> 00:00:56,615
+is valued at $3.8 trillion. Its shift towards
+
+8
+00:00:56,923 --> 00:01:08,923
+AI has bolstered the US economy through substantial
+
+9
+00:01:09,230 --> 00:01:21,230
+investments in data centers and AI systems.
+
+10
+00:01:20,000 --> 00:01:32,000
+Jensen Huang, Nvidia's co-founder, has been at the
+
+11
+00:01:33,714 --> 00:01:45,714
+helm, leading the company's strategic direction and growth.
+
+12
+00:01:47,428 --> 00:01:59,428
+His recent resignation has sparked concerns about the
+
+13
+00:02:01,142 --> 00:02:13,142
+future of Nvidia and its impact on the
+
+14
+00:02:14,857 --> 00:02:26,857
+broader tech industry.
+
+15
+00:02:20,000 --> 00:02:32,000
+Huang's departure has led to questions about Nvidia's
+
+16
+00:02:33,714 --> 00:02:45,714
+future strategy and spending. Key figures in the
+
+17
+00:02:47,428 --> 00:02:59,428
+industry warn of potential economic risks, including a
+
+18
+00:03:01,142 --> 00:03:13,142
+slowdown in AI investment and a ripple effect
+
+19
+00:03:14,857 --> 00:03:26,857
+on related companies.
+
+20
+00:03:20,000 --> 00:03:35,000
+Those are the key facts as reported so
+
+21
+00:03:36,000 --> 00:03:51,000
+far. Sources are linked in the description.
+
