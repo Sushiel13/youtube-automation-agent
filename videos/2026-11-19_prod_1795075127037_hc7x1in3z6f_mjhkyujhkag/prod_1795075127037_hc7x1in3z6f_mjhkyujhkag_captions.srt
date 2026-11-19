@@ -1,0 +1,80 @@
+1
+00:00:00,000 --> 00:00:02,500
+Discover the current international gold price and its
+
+2
+00:00:04,000 --> 00:00:06,500
+real-time implications.
+
+3
+00:00:05,000 --> 00:00:12,500
+Welcome to today's news update. In gold price
+
+4
+00:00:17,000 --> 00:00:24,500
+today: 
+
+5
+00:00:20,000 --> 00:00:50,000
+The international spot gold price is currently at
+
+6
+00:00:52,000 --> 00:01:22,000
+US$3732.47 per troy ounce as of 2026-11-19T07:55:32Z.
+
+7
+00:01:20,000 --> 00:01:32,000
+Gold prices have been fluctuating due to various
+
+8
+00:01:33,714 --> 00:01:45,714
+market factors. Today, the price remains steady at
+
+9
+00:01:47,428 --> 00:01:59,428
+US$3732.47 per troy ounce. According to the latest
+
+10
+00:02:01,142 --> 00:02:13,142
+reports, the price has remained relatively stable over
+
+11
+00:02:14,857 --> 00:02:26,857
+the past week.
+
+12
+00:02:20,000 --> 00:02:28,571
+To understand the price in Indian context, 1
+
+13
+00:02:29,795 --> 00:02:38,367
+US dollar is currently valued at 93.51 Indian
+
+14
+00:02:39,591 --> 00:02:48,163
+rupees (as of Thu, 19 Nov 2026 00:02:31
+
+15
+00:02:49,387 --> 00:02:57,959
++0000). Thus, the converted spot value of gold
+
+16
+00:02:59,183 --> 00:03:07,755
+is approximately ₹1,12,218 per 10 grams of 24-carat
+
+17
+00:03:08,979 --> 00:03:17,551
+gold, before Indian import duty, GST, and jeweller
+
+18
+00:03:18,775 --> 00:03:27,346
+margins.
+
+19
+00:03:20,000 --> 00:03:35,000
+Those are the key facts as reported so
+
+20
+00:03:36,000 --> 00:03:51,000
+far. Sources are linked in the description.
+
