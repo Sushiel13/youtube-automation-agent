@@ -1,0 +1,6 @@
+Sources:
+- Gold spot price (gold-api.com) (gold-api.com): https://gold-api.com
+- USD to INR exchange rate (open.er-api.com): https://open.er-api.com
+
+Images are illustrative and may not show the actual event.
+This video was produced with AI assistance from the reports above.
